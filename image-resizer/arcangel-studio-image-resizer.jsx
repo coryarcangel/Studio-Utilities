@@ -26,8 +26,7 @@ function timeSinceLastSessionAction() {
 function getConfigFromDialog() {
   var settings = setupWindow();
   config.title = settings["title"].text.toString();
-  config.type = settings["types"].value;
-  //changed to textbox. was "settings['types'].selection.text;
+  config.screenshot = settings["screenshot"].value;
   config.year = settings["year"].text.toString();
   config.inventory = settings["catnum"].text.toString();
   config.attr = settings["attr"].text.toString();
@@ -77,7 +76,7 @@ function constructFileName(kind, hash) {
 function getConfigFromEnv() {
   if ($.getenv("title")) {
     config.title = $.getenv("title");
-    config.type = $.getenv("type");
+    config.screenshot = $.getenv("screenshot");
     config.year = $.getenv("year");
     config.inventory = $.getenv("inventory");
     config.db = $.getenv("db");
@@ -91,7 +90,7 @@ function getConfigFromEnv() {
 
 function setConfigFromEnv() {
   $.setenv("title", config.title);
-  $.setenv("type", config.type);
+  $.setenv("screenshot", config.screenshot);
   $.setenv("year", config.year);
   $.setenv("inventory", config.inventory);
   $.setenv("web", config.web);
@@ -147,12 +146,9 @@ function setupWindow() {
     config.inventory ? config.inventory : "XX"
   );
   //w.catnum.value = "XX";
-  //w.types = w.add("dropdownlist",[55,75,165,100],['digital','install','full','still','condition','detail','reference','component','performance-view','production','screenshot']);
-  //w.types.selection = 0;
-  w.types = w.add("checkbox", [165, 75, 225, 100], "Screenshot?");
-  w.types.value = false;
+  w.screenshot = w.add("checkbox", [165, 75, 225, 100], "Screenshot?");
+  //w.screenshot.value = false;
   w.add("statictext", [leftGutter, 110, 170, 130], "Generate:");
-  //w.add ('statictext', [leftGutter, 75, 50, 100], 'type:');
   w.add("statictext", [leftGutter, 75, 110, 100], "Photographer:");
   w.attr = w.add("edittext", [110, 75, 160, 100], "ih");
   w.db = w.add("checkbox", [leftGutter, 140, 110, 160], "Database?");
@@ -203,11 +199,10 @@ var thisSession = 0;
 logConfig();
 var resampleMethod = ResampleMethod.BILINEAR;
 if (config.press) {
-  //do not include "type" anymore in filename.  "+config.inventory+"-"+config.type+"........
   var outfile = new File(
     work_folder + "/" + constructFileName("press", randomHash)
   );
-  if (config.type && doc.width.value < 3600) {
+  if (config.screenshot && doc.width.value < 3600) {
     resampleMethod = ResampleMethod.NEARESTNEIGHBOR;
   }
   if (doc.width.value < doc.height.value) {
@@ -218,6 +213,7 @@ if (config.press) {
   var tiffOptions = new TiffSaveOptions();
   tiffOptions.imageCompression = TIFFEncoding.TIFFLZW;
   tiffOptions.layers = false;
+  tiffOptions.embedColorProfile = false;
   $.writeln("making press image with ", resampleMethod, ". ", doc.width.value);
   if (!outfile.exists) {
     doc.saveAs(outfile, tiffOptions);
@@ -229,9 +225,6 @@ if (config.web) {
     work_folder + "/" + constructFileName("web", randomHash)
   );
   resampleMethod = ResampleMethod.BILINEAR;
-  if (config.type && doc.width.value < 1400) {
-    resampleMethod = ResampleMethod.NEARESTNEIGHBOR;
-  }
   doc.resizeImage("1400px", undefined, undefined, resampleMethod);
   var opts = new JPEGSaveOptions();
   opts.quality = 9;
@@ -244,9 +237,6 @@ if (config.db) {
     work_folder + "/" + constructFileName("db", randomHash)
   );
   resampleMethod = ResampleMethod.BILINEAR;
-  if (config.type && doc.width.value < 800) {
-    resampleMethod = ResampleMethod.NEARESTNEIGHBOR;
-  }
   $.writeln("making db image with ", resampleMethod, ". ", doc.width.value);
   doc.resizeImage("800px", undefined, 72, resampleMethod);
   if (!outfile.exists) doc.saveAs(outfile, new JPEGSaveOptions());
